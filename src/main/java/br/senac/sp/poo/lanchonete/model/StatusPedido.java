@@ -1,4 +1,6 @@
 package br.senac.sp.poo.lanchonete.model;
 
-public class StatusPedido {
+public enum StatusPedido {
+    ABERTA,
+    FECHADA
 }
