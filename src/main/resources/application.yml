@@ -1,0 +1,15 @@
+app:
+  datasource:
+    url: jdbc:mysql://localhost:3306/lanchonete
+    username: root
+    password: AdrikelcorE00
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    proporties:
+      hibernate:
+        format_sql: true
