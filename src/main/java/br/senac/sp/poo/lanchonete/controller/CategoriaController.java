@@ -3,15 +3,16 @@ package br.senac.sp.poo.lanchonete.controller;
 import br.senac.sp.poo.lanchonete.model.Categoria;
 import br.senac.sp.poo.lanchonete.model.Erro;
 import br.senac.sp.poo.lanchonete.repository.CategoriaRepository;
-
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/categoria")
@@ -22,12 +23,7 @@ public class CategoriaController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Categoria> getCategoria(@PathVariable("id") Long id) {
-        Optional<Categoria> tipo = repository.findById(id);
-        if (tipo.isPresent()) {
-            return ResponseEntity.ok(tipo.get());
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        return repository.findById(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping
@@ -35,14 +31,17 @@ public class CategoriaController {
         return ResponseEntity.ok(repository.findAll());
     }
 
+    // @GetMapping
+    // public Page<Categoria> listar(@PageableDefault(page = 0, size = 5, sort = "nome", direction = Sort.Direction.ASC) Pageable pageable) {
+    //     return repository.findAll(pageable);
+    // }
+
     @PostMapping
-    public ResponseEntity<Object> criarCategoria(@RequestBody Categoria tipo) {
+    public ResponseEntity<Object> criarCategoria(@Valid @RequestBody Categoria tipo) {
         try {
             repository.save(tipo);
-            // Retorna o status 201 Created com o URI da nova categoria.
             return ResponseEntity.created(URI.create("/categoria/" + tipo.getId())).body(tipo);
         } catch (DataIntegrityViolationException e) {
-            //
             Erro erro = Erro.builder()
                     .status(HttpStatus.BAD_REQUEST)
                     .mensagem("Categoria com nome duplicado não é permitida.")
@@ -58,7 +57,7 @@ public class CategoriaController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Categoria> atualizarCategoria(@PathVariable("id") Long id, @RequestBody Categoria tipo) {
+    public ResponseEntity<Categoria> atualizarCategoria(@PathVariable("id") Long id, @Valid @RequestBody Categoria tipo) {
         tipo.setId(id);
         repository.save(tipo);
         return ResponseEntity.ok(tipo);
@@ -68,5 +67,18 @@ public class CategoriaController {
     public ResponseEntity<Void> deletarCategoria(@PathVariable("id") Long id) {
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Erro> handleValidation(MethodArgumentNotValidException ex) {
+        String detalhes = ex.getBindingResult().getFieldErrors()
+                .stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+        Erro erro = Erro.builder()
+                .status(HttpStatus.BAD_REQUEST)
+                .mensagem("Erro de validação: " + detalhes)
+                .exception(ex.getClass().getName()).build();
+        return new ResponseEntity<>(erro, HttpStatus.BAD_REQUEST);
     }
 }

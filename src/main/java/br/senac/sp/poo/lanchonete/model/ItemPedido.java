@@ -2,17 +2,13 @@ package br.senac.sp.poo.lanchonete.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 @Data
-@Getter
-@Setter
 @Entity
 public class ItemPedido {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id;
     private int quantidade;
     private double subtotal;
 
@@ -22,9 +18,11 @@ public class ItemPedido {
 
     @ManyToOne
     @JoinColumn(name = "pedido_id")
+    @com.fasterxml.jackson.annotation.JsonBackReference
     private Pedido pedido;
 
     public double calcularSubtotal() {
+        if (item == null || item.getPreco() == null) return 0.0;
         return item.getPreco() * quantidade;
     }
 }

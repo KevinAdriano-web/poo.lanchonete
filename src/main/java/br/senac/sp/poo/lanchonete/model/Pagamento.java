@@ -2,22 +2,19 @@ package br.senac.sp.poo.lanchonete.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 @Data
-@Getter
-@Setter
 @Entity
 public class Pagamento {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Integer id;
     private double valorPago;
     private String metodo;
 
     @OneToOne
     @JoinColumn(name = "pedido_id")
+    @com.fasterxml.jackson.annotation.JsonBackReference
     private Pedido pedido;
 
     private StatusPagamento status;

@@ -1,22 +1,20 @@
 package br.senac.sp.poo.lanchonete.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.util.Date;
 import java.util.List;
 
 @Data
-@Getter
-@Setter
 @Entity
 public class Pedido {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Integer id;
 
+    @JsonManagedReference
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemPedido> itens;
 
@@ -30,6 +28,7 @@ public class Pedido {
     @JoinColumn(name = "mesa_numero")
     private Mesa mesa;
 
+    @JsonManagedReference
     @OneToMany (mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Pagamento> pagamento;
 
@@ -37,7 +36,14 @@ public class Pedido {
     private Date data;
 
     public double calcularSubtotal() {
-        return itens.stream().mapToDouble(ItemPedido::calcularSubtotal).sum();
+        if (itens == null) return 0.0;
+        double total = 0.0;
+        for (ItemPedido ip : itens) {
+            if (ip != null) {
+                total += ip.calcularSubtotal();
+            }
+        }
+        return total;
     }
 
     public double calcularTotal() {

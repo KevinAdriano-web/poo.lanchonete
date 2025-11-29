@@ -3,14 +3,16 @@ package br.senac.sp.poo.lanchonete.controller;
 import br.senac.sp.poo.lanchonete.model.Erro;
 import br.senac.sp.poo.lanchonete.model.Funcionario;
 import br.senac.sp.poo.lanchonete.repository.FuncionarioRepository;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/funcionario")
@@ -21,8 +23,7 @@ public class FuncionarioController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Funcionario> getFuncionario(@PathVariable("id") Long id) {
-        Optional<Funcionario> f = repository.findById(id);
-        return f.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+        return repository.findById(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping
@@ -31,7 +32,7 @@ public class FuncionarioController {
     }
 
     @PostMapping
-    public ResponseEntity<Object> criarFuncionario(@RequestBody Funcionario funcionario) {
+    public ResponseEntity<Object> criarFuncionario(@Valid @RequestBody Funcionario funcionario) {
         try {
             repository.save(funcionario);
             return ResponseEntity.created(URI.create("/funcionario/" + funcionario.getId())).body(funcionario);
@@ -53,7 +54,7 @@ public class FuncionarioController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Funcionario> atualizarFuncionario(@PathVariable("id") Long id, @RequestBody Funcionario funcionario) {
+    public ResponseEntity<Funcionario> atualizarFuncionario(@PathVariable("id") Long id, @Valid @RequestBody Funcionario funcionario) {
         funcionario.setId(id);
         repository.save(funcionario);
         return ResponseEntity.ok(funcionario);
@@ -63,5 +64,18 @@ public class FuncionarioController {
     public ResponseEntity<Void> deletarFuncionario(@PathVariable("id") Long id) {
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Erro> handleValidation(MethodArgumentNotValidException ex) {
+        String detalhes = ex.getBindingResult().getFieldErrors()
+                .stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+        Erro erro = Erro.builder()
+                .status(HttpStatus.BAD_REQUEST)
+                .mensagem("Erro de validação: " + detalhes)
+                .exception(ex.getClass().getName()).build();
+        return new ResponseEntity<>(erro, HttpStatus.BAD_REQUEST);
     }
 }

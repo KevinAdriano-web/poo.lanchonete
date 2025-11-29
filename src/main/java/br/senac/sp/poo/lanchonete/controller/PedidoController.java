@@ -4,6 +4,7 @@ import br.senac.sp.poo.lanchonete.model.Erro;
 import br.senac.sp.poo.lanchonete.model.ItemPedido;
 import br.senac.sp.poo.lanchonete.model.Pedido;
 import br.senac.sp.poo.lanchonete.repository.PedidoRepository;
+import br.senac.sp.poo.lanchonete.repository.ItemCardapioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,9 @@ public class PedidoController {
 
     @Autowired
     private PedidoRepository repository;
+
+    @Autowired
+    private ItemCardapioRepository itemCardapioRepository;
 
     @GetMapping("/{id}")
     public ResponseEntity<Pedido> getPedido(@PathVariable("id") Integer id) {
@@ -38,6 +42,10 @@ public class PedidoController {
             if (pedido.getItens() != null) {
                 for (ItemPedido ip : pedido.getItens()) {
                     ip.setPedido(pedido);
+                    // se o item for fornecido apenas como id, buscar o ItemCardapio completo para calcular o subtotal
+                    if (ip.getItem() != null && ip.getItem().getId() != null) {
+                        itemCardapioRepository.findById(ip.getItem().getId()).ifPresent(ip::setItem);
+                    }
                     ip.setSubtotal(ip.calcularSubtotal());
                 }
             }
@@ -65,6 +73,9 @@ public class PedidoController {
         if (pedido.getItens() != null) {
             for (ItemPedido ip : pedido.getItens()) {
                 ip.setPedido(pedido);
+                if (ip.getItem() != null && ip.getItem().getId() != null) {
+                    itemCardapioRepository.findById(ip.getItem().getId()).ifPresent(ip::setItem);
+                }
                 ip.setSubtotal(ip.calcularSubtotal());
             }
         }
